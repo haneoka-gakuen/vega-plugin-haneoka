@@ -1,0 +1,65 @@
+{
+  "name": "@haneoka/vega-plugin-haneoka",
+  "version": "0.1.0",
+  "description": "Code-only Haneoka host, resource, storage, localization, and input bridge for Vega",
+  "keywords": [
+    "visual-novel",
+    "adv",
+    "vega",
+    "plugin",
+    "host-bridge"
+  ],
+  "license": "MPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haneoka-gakuen/vega-plugin-haneoka.git"
+  },
+  "bugs": {
+    "url": "https://github.com/haneoka-gakuen/vega-plugin-haneoka/issues"
+  },
+  "homepage": "https://github.com/haneoka-gakuen/vega-plugin-haneoka#readme",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICE.md",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify:package": "node scripts/verify-package.mjs",
+    "check": "pnpm run typecheck && pnpm run build && pnpm run verify:package",
+    "prepack": "pnpm run check"
+  },
+  "peerDependencies": {
+    "@haneoka/vega": "^0.1.0"
+  },
+  "devDependencies": {
+    "@haneoka/vega": "^0.1.0",
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vite": "^7.3.6"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.14.0",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

@@ -1,0 +1,24 @@
+name: Bug report
+description: Report a reproducible Haneoka bridge defect
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Package and version
+      placeholder: "@haneoka/vega-plugin-haneoka 0.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction without restricted assets
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
