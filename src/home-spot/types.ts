@@ -1,8 +1,4 @@
-export type HaneokaHomeSpotVector3 = readonly [
-  number,
-  number,
-  number,
-];
+export type HaneokaHomeSpotVector3 = readonly [number, number, number];
 
 export interface HaneokaHomeSpotSpineLayer {
   readonly key: string;

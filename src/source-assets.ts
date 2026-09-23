@@ -6,8 +6,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-const ADV_CHAT_COMMON_SPRITES =
-  "Assets/AddressableResources/Adv/Chat/Common/Sprites";
+const ADV_CHAT_COMMON_SPRITES = "Assets/AddressableResources/Adv/Chat/Common/Sprites";
 
 /**
  * Source paths for the native ADV chat chrome.
@@ -26,21 +25,11 @@ export const HANEOKA_CHAT_ICON_SOURCE_PATHS = Object.freeze({
   batteryFrame: `${ADV_CHAT_COMMON_SPRITES}/battery_frame.png`,
 });
 
-export type HaneokaChatIconSprites = Readonly<
-  Record<keyof typeof HANEOKA_CHAT_ICON_SOURCE_PATHS, string>
->;
+export type HaneokaChatIconSprites = Readonly<Record<keyof typeof HANEOKA_CHAT_ICON_SOURCE_PATHS, string>>;
 
-export const resolveHaneokaChatIconSprites = (
-  sourceAsset: (path: string) => string,
-): HaneokaChatIconSprites =>
+export const resolveHaneokaChatIconSprites = (sourceAsset: (path: string) => string): HaneokaChatIconSprites =>
   Object.freeze(
     Object.fromEntries(
-      Object.entries(HANEOKA_CHAT_ICON_SOURCE_PATHS).map(([key, path]) => [
-        key,
-        sourceAsset(path),
-      ]),
-    ) as unknown as Record<
-      keyof typeof HANEOKA_CHAT_ICON_SOURCE_PATHS,
-      string
-    >,
+      Object.entries(HANEOKA_CHAT_ICON_SOURCE_PATHS).map(([key, path]) => [key, sourceAsset(path)]),
+    ) as unknown as Record<keyof typeof HANEOKA_CHAT_ICON_SOURCE_PATHS, string>,
   );

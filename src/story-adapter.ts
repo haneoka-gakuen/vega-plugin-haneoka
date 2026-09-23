@@ -1,8 +1,9 @@
 import type { AdvStory } from "@haneoka/vega";
 import { haneokaFallbackMotionSyncAudioScales } from "./motion-sync-profile";
 
-export const HANEOKA_ADV_CHAT_DEFAULT_DATA_ROOT =
-  "Assets/AddressableResources/Adv/Chat/Data/_template/data/ChatLINE";
+export const HANEOKA_ADV_CHAT_DEFAULT_DATA_ROOT = "Assets/AddressableResources/Adv/Chat/Data/_template/data";
+
+const HANEOKA_ADV_CHAT_LEGACY_DEFAULT_DATA_ROOT = `${HANEOKA_ADV_CHAT_DEFAULT_DATA_ROOT}/ChatLINE`;
 
 export interface HaneokaLegacyCharacterFields {
   readonly modelField: string;
@@ -12,14 +13,10 @@ export interface HaneokaLegacyCharacterFields {
 }
 
 const recordValue = (value: unknown): Record<string, unknown> =>
-  value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+  value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 
 const firstString = (...values: unknown[]): string =>
-  values
-    .map((value) => (typeof value === "string" ? value.trim() : ""))
-    .find(Boolean) ?? "";
+  values.map((value) => (typeof value === "string" ? value.trim() : "")).find(Boolean) ?? "";
 
 /**
  * Converts Haneoka catalog metadata into Vega's source-neutral character
@@ -39,12 +36,7 @@ export const normalizeHaneokaStoryCharacterEntry = (
     value.model3Json,
   );
   const moc = firstString(runtime.moc, runtime.moc3, value.moc, value.moc3);
-  const imageUrl = firstString(
-    runtime.imageUrl,
-    value.imageUrl,
-    value.faceImage,
-    value.thumbnailImage,
-  );
+  const imageUrl = firstString(runtime.imageUrl, value.imageUrl, value.faceImage, value.thumbnailImage);
   const textures = Array.isArray(runtime.textures)
     ? runtime.textures
     : Array.isArray(value.textures)
@@ -64,9 +56,7 @@ export const normalizeHaneokaStoryCharacterEntry = (
       ...(textures ? { textures: [...textures] } : {}),
       ...(physics ? { physics } : {}),
       ...(imageUrl ? { imageUrl } : {}),
-      ...(fallbackMotionSyncAudioScales
-        ? { fallbackMotionSyncAudioScales }
-        : {}),
+      ...(fallbackMotionSyncAudioScales ? { fallbackMotionSyncAudioScales } : {}),
     },
   };
 };
@@ -99,24 +89,13 @@ export const normalizeHaneokaSpineCharacterEntry = (
   const binarySource = firstString(runtime.skel, value.skel);
   const jsonSource = firstString(runtime.json, value.json);
   const genericSource = firstString(runtime.skeleton, value.skeleton);
-  const modelSource = firstString(
-    runtime.model,
-    runtime.modelUrl,
-    value.model,
-    value.modelUrl,
-  );
+  const modelSource = firstString(runtime.model, runtime.modelUrl, value.model, value.modelUrl);
   const skeleton = binarySource || jsonSource || genericSource || modelSource;
   const atlas = firstString(runtime.atlas, value.atlas);
-  const imageUrl = firstString(
-    runtime.imageUrl,
-    value.imageUrl,
-    value.faceImage,
-    value.thumbnailImage,
-  );
+  const imageUrl = firstString(runtime.imageUrl, value.imageUrl, value.faceImage, value.thumbnailImage);
   const explicitFormat = firstString(runtime.format, value.format).toLowerCase();
   const genericOrModelSource = genericSource || modelSource;
-  const hasStandardGenericSuffix =
-    /\.(?:json|skel)(?:[?#].*)?$/iu.test(genericOrModelSource);
+  const hasStandardGenericSuffix = /\.(?:json|skel)(?:[?#].*)?$/iu.test(genericOrModelSource);
   const binary =
     Boolean(binarySource) ||
     (!jsonSource &&
@@ -132,9 +111,7 @@ export const normalizeHaneokaSpineCharacterEntry = (
           }
         : {}),
       ...(atlas ? { atlas } : {}),
-      ...((runtime.scale ?? value.scale) !== undefined
-        ? { scale: runtime.scale ?? value.scale }
-        : {}),
+      ...((runtime.scale ?? value.scale) !== undefined ? { scale: runtime.scale ?? value.scale } : {}),
       ...(firstString(runtime.animation, value.animation)
         ? { animation: firstString(runtime.animation, value.animation) }
         : {}),
@@ -144,35 +121,19 @@ export const normalizeHaneokaSpineCharacterEntry = (
 };
 
 /** Routes one source-specific record to the matching portable model tuple. */
-export const normalizeHaneokaCharacterEntry = (
-  value: Readonly<Record<string, unknown>>,
-): Record<string, unknown> => {
+export const normalizeHaneokaCharacterEntry = (value: Readonly<Record<string, unknown>>): Record<string, unknown> => {
   const runtime = recordValue(value.runtime);
   const format = firstString(runtime.format, value.format).toLowerCase();
-  if (
-    format === "spine" ||
-    format === "spine-json" ||
-    format === "spine-binary"
-  ) {
+  if (format === "spine" || format === "spine-json" || format === "spine-binary") {
     return normalizeHaneokaSpineCharacterEntry(value);
   }
   if (format) return normalizeHaneokaStoryCharacterEntry(value);
-  const model = firstString(
-    runtime.model,
-    runtime.modelUrl,
-    value.model,
-    value.modelUrl,
-  );
+  const model = firstString(runtime.model, runtime.modelUrl, value.model, value.modelUrl);
   if (/model3?\.json(?:[?#].*)?$/iu.test(model)) {
     return normalizeHaneokaStoryCharacterEntry(value);
   }
   const atlas = firstString(runtime.atlas, value.atlas);
-  const explicitSource = firstString(
-    runtime.skel,
-    value.skel,
-    runtime.json,
-    value.json,
-  );
+  const explicitSource = firstString(runtime.skel, value.skel, runtime.json, value.json);
   const genericSource = firstString(
     runtime.skeleton,
     value.skeleton,
@@ -187,13 +148,7 @@ export const normalizeHaneokaCharacterEntry = (
 };
 
 const SAFE_FIELD = /^[A-Za-z_$][A-Za-z0-9_$]{0,127}$/u;
-const BLOCKED_FIELDS = new Set([
-  "__proto__",
-  "constructor",
-  "prototype",
-  "characterModel",
-  "characterKey",
-]);
+const BLOCKED_FIELDS = new Set(["__proto__", "constructor", "prototype", "characterModel", "characterKey"]);
 
 /**
  * Builds a host-boundary migration for a legacy character payload.
@@ -202,13 +157,10 @@ const BLOCKED_FIELDS = new Set([
  * names from its source packaging layer and receives the portable command
  * shape expected by the public engine.
  */
-export const createHaneokaStoryAdapter = (
-  fields: HaneokaLegacyCharacterFields,
-) => {
+export const createHaneokaStoryAdapter = (fields: HaneokaLegacyCharacterFields) => {
   const modelField = safeField(fields.modelField);
   const keyField = safeField(fields.keyField);
-  if (modelField === keyField)
-    throw new TypeError("Legacy character model and key fields must differ");
+  if (modelField === keyField) throw new TypeError("Legacy character model and key fields must differ");
 
   return (source: AdvStory): AdvStory => {
     const story = structuredClone(source);
@@ -216,13 +168,8 @@ export const createHaneokaStoryAdapter = (
     // that resolve the same source model must stay on one shared descriptor so
     // the preloader can select the referenced motions instead of conservatively
     // warming the complete catalog for every separately normalized clone.
-    const normalizedCharacterModels = new WeakMap<
-      object,
-      Record<string, unknown>
-    >();
-    const normalizedCharacterModel = (
-      model: Record<string, unknown>,
-    ): Record<string, unknown> => {
+    const normalizedCharacterModels = new WeakMap<object, Record<string, unknown>>();
+    const normalizedCharacterModel = (model: Record<string, unknown>): Record<string, unknown> => {
       const cached = normalizedCharacterModels.get(model);
       if (cached) return cached;
       const normalized = normalizeHaneokaCharacterEntry(model);
@@ -232,7 +179,8 @@ export const createHaneokaStoryAdapter = (
     };
     const runtime = recordValue(story.runtime);
     const chatAssets = recordValue(runtime.chatAssets);
-    if (!firstString(chatAssets.defaultDataRoot)) {
+    const defaultDataRoot = firstString(chatAssets.defaultDataRoot).replace(/\/+$/u, "");
+    if (!defaultDataRoot || defaultDataRoot === HANEOKA_ADV_CHAT_LEGACY_DEFAULT_DATA_ROOT) {
       story.runtime = {
         ...runtime,
         chatAssets: {
@@ -243,10 +191,7 @@ export const createHaneokaStoryAdapter = (
     }
     visit(story, (record) => {
       if (!Object.hasOwn(record, "command")) return;
-      if (
-        record.characterModel === undefined &&
-        record[modelField] !== undefined
-      ) {
+      if (record.characterModel === undefined && record[modelField] !== undefined) {
         const model = record[modelField];
         record.characterModel =
           model && typeof model === "object" && !Array.isArray(model)

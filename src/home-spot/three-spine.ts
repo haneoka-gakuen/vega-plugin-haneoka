@@ -51,28 +51,19 @@ interface SpineInstance {
 }
 
 const runtimeRecord = (value: unknown): Record<string, unknown> =>
-  value && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : {};
+  value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 
 const firstString = (...values: unknown[]): string =>
-  values
-    .map((value) => (typeof value === "string" ? value.trim() : ""))
-    .find(Boolean) ?? "";
+  values.map((value) => (typeof value === "string" ? value.trim() : "")).find(Boolean) ?? "";
 
-const requiredConstructor = (
-  value: unknown,
-  label: string,
-): RuntimeConstructor => {
+const requiredConstructor = (value: unknown, label: string): RuntimeConstructor => {
   if (typeof value !== "function") {
     throw new TypeError(`Haneoka Home Spot runtime is missing ${label}`);
   }
   return value as RuntimeConstructor;
 };
 
-const resolveModules = (
-  modules: HaneokaHomeSpotRuntimeModules,
-): ResolvedRuntimeModules => {
+const resolveModules = (modules: HaneokaHomeSpotRuntimeModules): ResolvedRuntimeModules => {
   const THREE = runtimeRecord(modules.three);
   const spine = runtimeRecord(modules.spine);
   const requiredThreeConstructors = [
@@ -93,30 +84,14 @@ const resolveModules = (
     THREE,
     GLTFLoader: requiredConstructor(modules.GLTFLoader, "GLTFLoader"),
     AssetManager: requiredConstructor(spine.AssetManager, "Spine.AssetManager"),
-    AtlasAttachmentLoader: requiredConstructor(
-      spine.AtlasAttachmentLoader,
-      "Spine.AtlasAttachmentLoader",
-    ),
-    SkeletonBinary: requiredConstructor(
-      spine.SkeletonBinary,
-      "Spine.SkeletonBinary",
-    ),
-    SkeletonJson: requiredConstructor(
-      spine.SkeletonJson,
-      "Spine.SkeletonJson",
-    ),
-    SkeletonMesh: requiredConstructor(
-      spine.SkeletonMesh,
-      "Spine.SkeletonMesh",
-    ),
+    AtlasAttachmentLoader: requiredConstructor(spine.AtlasAttachmentLoader, "Spine.AtlasAttachmentLoader"),
+    SkeletonBinary: requiredConstructor(spine.SkeletonBinary, "Spine.SkeletonBinary"),
+    SkeletonJson: requiredConstructor(spine.SkeletonJson, "Spine.SkeletonJson"),
+    SkeletonMesh: requiredConstructor(spine.SkeletonMesh, "Spine.SkeletonMesh"),
   };
 };
 
-const numberAt = (
-  value: readonly number[] | undefined,
-  index: number,
-  fallback: number,
-): number => {
+const numberAt = (value: readonly number[] | undefined, index: number, fallback: number): number => {
   const number = Number(value?.[index]);
   return Number.isFinite(number) ? number : fallback;
 };
@@ -126,16 +101,9 @@ const unityVector = (
   value: readonly number[] | undefined,
   fallback: readonly [number, number, number],
 ): RuntimeValue =>
-  new THREE.Vector3(
-    numberAt(value, 0, fallback[0]),
-    numberAt(value, 1, fallback[1]),
-    -numberAt(value, 2, fallback[2]),
-  );
+  new THREE.Vector3(numberAt(value, 0, fallback[0]), numberAt(value, 1, fallback[1]), -numberAt(value, 2, fallback[2]));
 
-const convertedUnityMatrix = (
-  THREE: RuntimeValue,
-  value: readonly number[] | undefined,
-): RuntimeValue => {
+const convertedUnityMatrix = (THREE: RuntimeValue, value: readonly number[] | undefined): RuntimeValue => {
   if (!value || value.length !== 16) return new THREE.Matrix4();
   const unity = new THREE.Matrix4().set(...value);
   const reflection = new THREE.Matrix4().makeScale(1, 1, -1);
@@ -145,11 +113,7 @@ const convertedUnityMatrix = (
 const disposeObject = (root: RuntimeValue | null): void => {
   root?.traverse?.((object: RuntimeValue) => {
     object.geometry?.dispose?.();
-    const materials = Array.isArray(object.material)
-      ? object.material
-      : object.material
-        ? [object.material]
-        : [];
+    const materials = Array.isArray(object.material) ? object.material : object.material ? [object.material] : [];
     for (const material of materials) {
       material.map?.dispose?.();
       material.dispose?.();
@@ -157,17 +121,12 @@ const disposeObject = (root: RuntimeValue | null): void => {
   });
 };
 
-const configureBackground = (
-  root: RuntimeValue,
-  renderer: RuntimeValue,
-): void => {
+const configureBackground = (root: RuntimeValue, renderer: RuntimeValue): void => {
   const anisotropy = renderer.capabilities.getMaxAnisotropy();
   root.traverse((object: RuntimeValue) => {
     if (!object.isMesh) return;
     object.renderOrder = 0;
-    const materials = Array.isArray(object.material)
-      ? object.material
-      : [object.material];
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       if (!material) continue;
       material.depthTest = true;
@@ -182,17 +141,12 @@ const configureBackground = (
   });
 };
 
-const configureSpine = (
-  instance: SpineInstance,
-  renderer: RuntimeValue,
-): void => {
+const configureSpine = (instance: SpineInstance, renderer: RuntimeValue): void => {
   const anisotropy = renderer.capabilities.getMaxAnisotropy();
   instance.spine.traverse((object: RuntimeValue) => {
     if (!object.isMesh) return;
     object.renderOrder = 100 + instance.sortingOrder;
-    const materials = Array.isArray(object.material)
-      ? object.material
-      : [object.material];
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       if (!material) continue;
       material.depthTest = true;
@@ -221,24 +175,16 @@ const normalizeLayer = (
   const runtime = runtimeRecord(normalized.runtime);
   const skeleton = firstString(runtime.json, runtime.skel, runtime.model);
   if (!skeleton) {
-    throw new TypeError(
-      `Haneoka Home Spot layer ${layer.key || "<unnamed>"} has no skeleton`,
-    );
+    throw new TypeError(`Haneoka Home Spot layer ${layer.key || "<unnamed>"} has no skeleton`);
   }
   return {
     key: layer.key,
     characterId: Number(layer.characterId) || 0,
     sortingOrder: Number(layer.sortingOrder) || 0,
-    animation: firstString(
-      runtime.animation,
-      layer.animation,
-      defaultAnimation,
-    ),
+    animation: firstString(runtime.animation, layer.animation, defaultAnimation),
     skeleton,
     binary:
-      Boolean(runtime.skel) ||
-      firstString(runtime.format) === "spine-binary" ||
-      /\.skel(?:[?#].*)?$/iu.test(skeleton),
+      Boolean(runtime.skel) || firstString(runtime.format) === "spine-binary" || /\.skel(?:[?#].*)?$/iu.test(skeleton),
     scale: Number(runtime.scale) || Number(defaultScale) || 0.01,
     ...(layer.transform ? { transform: layer.transform } : {}),
     ...(layer.hitPolygon ? { hitPolygon: layer.hitPolygon } : {}),
@@ -246,15 +192,13 @@ const normalizeLayer = (
 };
 
 const abortReason = (signal: AbortSignal): unknown =>
-  signal.reason ??
-  new DOMException("Haneoka Home Spot loading was aborted", "AbortError");
+  signal.reason ?? new DOMException("Haneoka Home Spot loading was aborted", "AbortError");
 
 const throwIfAborted = (signal: AbortSignal | undefined): void => {
   if (signal?.aborted) throw abortReason(signal);
 };
 
-const nowMilliseconds = (): number =>
-  globalThis.performance?.now?.() ?? Date.now();
+const nowMilliseconds = (): number => globalThis.performance?.now?.() ?? Date.now();
 
 class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
   readonly canvas: HTMLElement;
@@ -287,10 +231,7 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
   private contextLost = false;
   private disposedValue = false;
 
-  constructor(
-    options: CreateHaneokaHomeSpotSceneOptions,
-    modules: ResolvedRuntimeModules,
-  ) {
+  constructor(options: CreateHaneokaHomeSpotSceneOptions, modules: ResolvedRuntimeModules) {
     this.options = options;
     this.modules = modules;
     const THREE = modules.THREE;
@@ -317,21 +258,9 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
     this.pointerTarget = new THREE.Vector2();
     this.smoothedAngles = new THREE.Vector2();
     this.desiredAngles = new THREE.Vector2();
-    this.basePosition = unityVector(
-      THREE,
-      cameraSettings?.position,
-      [0, 0, -1],
-    );
-    this.startPosition = unityVector(
-      THREE,
-      cameraSettings?.startPosition,
-      [0, 0, -2],
-    );
-    this.targetPosition = unityVector(
-      THREE,
-      cameraSettings?.target,
-      [0, 0, 0],
-    );
+    this.basePosition = unityVector(THREE, cameraSettings?.position, [0, 0, -1]);
+    this.startPosition = unityVector(THREE, cameraSettings?.startPosition, [0, 0, -2]);
+    this.targetPosition = unityVector(THREE, cameraSettings?.target, [0, 0, 0]);
     this.baseRotation = new THREE.Euler(0, 0, 0, "YXZ");
     this.forward = new THREE.Vector3();
     this.orbitPosition = new THREE.Vector3();
@@ -370,19 +299,11 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
     const atlas = firstString(descriptor.atlas);
     const backgroundSource = firstString(descriptor.backgroundScene);
     const layers = (descriptor.layers ?? []).map((layer) =>
-      normalizeLayer(
-        layer,
-        atlas,
-        descriptor.scale,
-        descriptor.animation,
-      ),
+      normalizeLayer(layer, atlas, descriptor.scale, descriptor.animation),
     );
     this.options.host.appendChild(this.canvas);
     this.canvas.addEventListener("webglcontextlost", this.onContextLost);
-    this.canvas.addEventListener(
-      "webglcontextrestored",
-      this.onContextRestored,
-    );
+    this.canvas.addEventListener("webglcontextrestored", this.onContextRestored);
     this.options.signal?.addEventListener("abort", this.onAbort, {
       once: true,
     });
@@ -403,9 +324,7 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
     ]);
     if (this.disposedValue || this.options.signal?.aborted) {
       disposeObject(gltf?.scene ?? null);
-      throw abortReason(
-        this.options.signal ?? AbortSignal.abort("scene disposed"),
-      );
+      throw abortReason(this.options.signal ?? AbortSignal.abort("scene disposed"));
     }
     throwIfAborted(this.options.signal);
 
@@ -418,16 +337,12 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
 
     const atlasValue = this.manager.require(atlas);
     this.instances = layers.map((layer) => {
-      const attachmentLoader = new this.modules.AtlasAttachmentLoader(
-        atlasValue,
-      );
+      const attachmentLoader = new this.modules.AtlasAttachmentLoader(atlasValue);
       const parser = layer.binary
         ? new this.modules.SkeletonBinary(attachmentLoader)
         : new this.modules.SkeletonJson(attachmentLoader);
       parser.scale = layer.scale;
-      const skeletonData = parser.readSkeletonData(
-        this.manager.require(layer.skeleton),
-      );
+      const skeletonData = parser.readSkeletonData(this.manager.require(layer.skeleton));
       const spine = new this.modules.SkeletonMesh({
         skeletonData,
         twoColorTint: true,
@@ -440,9 +355,7 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
       });
       spine.zOffset = 0;
       spine.matrixAutoUpdate = false;
-      spine.matrix.copy(
-        convertedUnityMatrix(this.modules.THREE, layer.transform),
-      );
+      spine.matrix.copy(convertedUnityMatrix(this.modules.THREE, layer.transform));
       if (layer.animation) {
         spine.state.setAnimation(0, layer.animation, false);
       }
@@ -458,9 +371,7 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
       this.scene.add(spine);
       return instance;
     });
-    this.hitInstances = [...this.instances].sort(
-      (left, right) => right.sortingOrder - left.sortingOrder,
-    );
+    this.hitInstances = [...this.instances].sort((left, right) => right.sortingOrder - left.sortingOrder);
     this.replay();
     this.renderer.render(this.scene, this.camera);
     this.renderer.setAnimationLoop(this.renderFrame);
@@ -476,14 +387,8 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
     const width = Math.max(1, rect.width);
     const height = Math.max(1, rect.height);
     this.pointerTarget.set(
-      Math.max(
-        -1,
-        Math.min(1, ((clientX - rect.left) / width) * 2 - 1),
-      ),
-      Math.max(
-        -1,
-        Math.min(1, ((clientY - rect.top) / height) * 2 - 1),
-      ),
+      Math.max(-1, Math.min(1, ((clientX - rect.left) / width) * 2 - 1)),
+      Math.max(-1, Math.min(1, ((clientY - rect.top) / height) * 2 - 1)),
     );
     const characterId = this.characterAt(clientX, clientY);
     this.options.host.style.cursor = characterId ? "pointer" : "default";
@@ -529,9 +434,7 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
       this.renderer.capabilities.maxTextureSize / height,
     );
     const devicePixelRatio = Number(globalThis.devicePixelRatio) || 1;
-    this.renderer.setPixelRatio(
-      Math.max(1, Math.min(devicePixelRatio, maximumRatio, 2)),
-    );
+    this.renderer.setPixelRatio(Math.max(1, Math.min(devicePixelRatio, maximumRatio, 2)));
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
@@ -544,14 +447,8 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.renderer.setAnimationLoop(null);
-    this.canvas.removeEventListener(
-      "webglcontextlost",
-      this.onContextLost,
-    );
-    this.canvas.removeEventListener(
-      "webglcontextrestored",
-      this.onContextRestored,
-    );
+    this.canvas.removeEventListener("webglcontextlost", this.onContextLost);
+    this.canvas.removeEventListener("webglcontextrestored", this.onContextRestored);
     for (const instance of this.instances) instance.spine.dispose();
     this.instances = [];
     this.hitInstances = [];
@@ -564,36 +461,17 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
   }
 
   private readonly renderFrame = (time: number): void => {
-    if (
-      this.disposedValue ||
-      this.contextLost ||
-      !this.background
-    ) {
+    if (this.disposedValue || this.contextLost || !this.background) {
       return;
     }
-    const deltaTime = this.previousFrameTime
-      ? Math.min(
-          0.064,
-          Math.max(0, (time - this.previousFrameTime) / 1000),
-        )
-      : 0;
+    const deltaTime = this.previousFrameTime ? Math.min(0.064, Math.max(0, (time - this.previousFrameTime) / 1000)) : 0;
     this.previousFrameTime = time;
     this.applyCamera(time, deltaTime);
-    const fadeDuration =
-      Math.max(0, Number(this.options.descriptor.fadeInDuration) || 0) * 1000;
-    const fade = fadeDuration
-      ? Math.max(
-          0,
-          Math.min(1, (time - this.characterFadeStartedAt) / fadeDuration),
-        )
-      : 1;
+    const fadeDuration = Math.max(0, Number(this.options.descriptor.fadeInDuration) || 0) * 1000;
+    const fade = fadeDuration ? Math.max(0, Math.min(1, (time - this.characterFadeStartedAt) / fadeDuration)) : 1;
     for (const instance of this.instances) {
       instance.spine.skeleton.color.a =
-        fade *
-        haneokaHomeSpotSelectionAlpha(
-          this.selectedCharacterId,
-          instance.characterId,
-        );
+        fade * haneokaHomeSpotSelectionAlpha(this.selectedCharacterId, instance.characterId);
       instance.spine.update(deltaTime);
     }
     this.renderer.render(this.scene, this.camera);
@@ -607,36 +485,19 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
     if (duration > 0 && elapsed < duration) {
       this.camera.rotation.copy(this.baseRotation);
       this.forward.set(0, 0, -1).applyEuler(this.baseRotation);
-      this.orbitPosition
-        .copy(this.basePosition)
-        .addScaledVector(
-          this.forward,
-          -(Number(settings.orbitRatio) || 0),
-        );
+      this.orbitPosition.copy(this.basePosition).addScaledVector(this.forward, -(Number(settings.orbitRatio) || 0));
       this.camera.position.lerpVectors(
         this.startPosition,
         this.orbitPosition,
-        haneokaHomeSpotIntroProgress(
-          elapsed / duration,
-          Number(settings.introEase) || 0,
-        ),
+        haneokaHomeSpotIntroProgress(elapsed / duration, Number(settings.introEase) || 0),
       );
       return;
     }
 
-    const desired = haneokaHomeSpotPointerAngles(
-      this.pointerTarget,
-      settings.mouseFollow,
-    );
+    const desired = haneokaHomeSpotPointerAngles(this.pointerTarget, settings.mouseFollow);
     this.desiredAngles.set(desired.x, desired.y);
-    const smoothTime = Math.max(
-      0.001,
-      Number(settings.mouseFollow?.smoothTime) || 0.1,
-    );
-    this.smoothedAngles.lerp(
-      this.desiredAngles,
-      1 - Math.exp(-Math.max(0, deltaTime) / smoothTime),
-    );
+    const smoothTime = Math.max(0.001, Number(settings.mouseFollow?.smoothTime) || 0.1);
+    this.smoothedAngles.lerp(this.desiredAngles, 1 - Math.exp(-Math.max(0, deltaTime) / smoothTime));
     const degreesToRadians = Math.PI / 180;
     this.camera.rotation.set(
       this.baseRotation.x + this.smoothedAngles.y * degreesToRadians,
@@ -644,15 +505,8 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
       this.baseRotation.z,
       "YXZ",
     );
-    this.forward
-      .set(0, 0, -1)
-      .applyQuaternion(this.camera.quaternion);
-    this.camera.position
-      .copy(this.basePosition)
-      .addScaledVector(
-        this.forward,
-        -(Number(settings.orbitRatio) || 0),
-      );
+    this.forward.set(0, 0, -1).applyQuaternion(this.camera.quaternion);
+    this.camera.position.copy(this.basePosition).addScaledVector(this.forward, -(Number(settings.orbitRatio) || 0));
   }
 
   private characterAt(clientX: number, clientY: number): number {
@@ -665,11 +519,7 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
       if (!instance.characterId || !instance.hitPolygon?.length) continue;
       instance.spine.updateMatrixWorld(true);
       const corners = instance.hitPolygon.map((point) => {
-        const projected = unityVector(
-          this.modules.THREE,
-          point,
-          [0, 0, 0],
-        )
+        const projected = unityVector(this.modules.THREE, point, [0, 0, 0])
           .applyMatrix4(instance.spine.matrixWorld)
           .project(this.camera);
         return {
@@ -685,9 +535,7 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
   }
 }
 
-const validateDescriptor = (
-  options: CreateHaneokaHomeSpotSceneOptions,
-): void => {
+const validateDescriptor = (options: CreateHaneokaHomeSpotSceneOptions): void => {
   const descriptor = options.descriptor;
   if (
     !options.host ||
@@ -699,10 +547,7 @@ const validateDescriptor = (
   ) {
     throw new TypeError("Haneoka Home Spot scene descriptor is incomplete");
   }
-  if (
-    typeof options.clearColor !== "string" ||
-    !options.clearColor.trim()
-  ) {
+  if (typeof options.clearColor !== "string" || !options.clearColor.trim()) {
     throw new TypeError("Haneoka Home Spot clear color cannot be empty");
   }
 };
@@ -718,10 +563,7 @@ export const createHaneokaThreeSpineHomeSpotScene = async (
 ): Promise<HaneokaHomeSpotSceneController> => {
   validateDescriptor(options);
   throwIfAborted(options.signal);
-  const controller = new ThreeSpineHomeSpotScene(
-    options,
-    resolveModules(options.modules),
-  );
+  const controller = new ThreeSpineHomeSpotScene(options, resolveModules(options.modules));
   try {
     await controller.initialize();
     throwIfAborted(options.signal);

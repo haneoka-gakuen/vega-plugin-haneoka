@@ -1,8 +1,7 @@
 import type { StoryResourceScope } from "@haneoka/vega/runtime";
 
 const RELEASE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/iu;
-const RUNTIME_ROOT =
-  /^(?:cri|live2d|note-se|sonolus|unity|unity-json)\//iu;
+const RUNTIME_ROOT = /^(?:cri|live2d|note-se|sonolus|unity|unity-json)\//iu;
 
 export interface HaneokaReleaseResourceScopeOptions {
   readonly releaseId: string;
@@ -32,10 +31,7 @@ export const createHaneokaReleaseResourceScope = (
       if (url.startsWith(assetPrefix)) {
         return /^(?:Assets|Packages)\//u.test(url.slice(assetPrefix.length));
       }
-      return (
-        url.startsWith(runtimePrefix) &&
-        RUNTIME_ROOT.test(url.slice(runtimePrefix.length))
-      );
+      return url.startsWith(runtimePrefix) && RUNTIME_ROOT.test(url.slice(runtimePrefix.length));
     },
   });
 };

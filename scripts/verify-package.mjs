@@ -1,23 +1,11 @@
-import {
-  access,
-  lstat,
-  readFile,
-  readdir,
-  realpath,
-  stat,
-} from "node:fs/promises";
+import { access, lstat, readFile, readdir, realpath, stat } from "node:fs/promises";
 import { relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  restrictedHaneokaContentReason,
-  restrictedHaneokaPathReason,
-} from "./distribution-policy.mjs";
+import { restrictedHaneokaContentReason, restrictedHaneokaPathReason } from "./distribution-policy.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const manifest = JSON.parse(
-  await readFile(resolve(root, "package.json"), "utf8"),
-);
+const manifest = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
 
 const fail = (message) => {
   throw new Error(`Package verification failed: ${message}`);
@@ -35,20 +23,13 @@ if (manifest.publishConfig?.access !== "public") {
 if (manifest.publishConfig?.provenance !== true) {
   fail("publishConfig.provenance must be enabled");
 }
-const expectedRepository =
-  "git+https://github.com/haneoka-gakuen/vega-plugin-haneoka.git";
+const expectedRepository = "git+https://github.com/haneoka-gakuen/vega-plugin-haneoka.git";
 if (manifest.repository?.url !== expectedRepository) {
   fail(`repository.url must be ${expectedRepository}`);
 }
 
-const forbiddenRuntimeDependency =
-  /(?:^three$|@esotericsoftware|cubism|live2d|motionsync|spine)/iu;
-for (const section of [
-  "dependencies",
-  "devDependencies",
-  "optionalDependencies",
-  "peerDependencies",
-]) {
+const forbiddenRuntimeDependency = /(?:^three$|@esotericsoftware|cubism|live2d|motionsync|spine)/iu;
+for (const section of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"]) {
   for (const name of Object.keys(manifest[section] ?? {})) {
     if (forbiddenRuntimeDependency.test(name)) {
       fail(`forbidden renderer SDK/runtime dependency ${name} in ${section}`);
@@ -62,16 +43,14 @@ if (Object.keys(manifest.optionalDependencies ?? {}).length > 0) {
   fail("optional runtime dependencies are not allowed");
 }
 if (
-  (Array.isArray(manifest.bundledDependencies) &&
-    manifest.bundledDependencies.length > 0) ||
-  (Array.isArray(manifest.bundleDependencies) &&
-    manifest.bundleDependencies.length > 0)
+  (Array.isArray(manifest.bundledDependencies) && manifest.bundledDependencies.length > 0) ||
+  (Array.isArray(manifest.bundleDependencies) && manifest.bundleDependencies.length > 0)
 ) {
   fail("bundled dependencies are not allowed");
 }
 const actualPeers = Object.keys(manifest.peerDependencies ?? {}).sort();
-if (JSON.stringify(actualPeers) !== JSON.stringify(["@haneoka/vega"])) {
-  fail("peer dependencies must be exactly @haneoka/vega");
+if (JSON.stringify(actualPeers) !== JSON.stringify(["@haneoka/vega", "@haneoka/vega-protocol"])) {
+  fail("peer dependencies must be Vega and its protocol");
 }
 
 const collectTargets = (value) => {
@@ -83,12 +62,7 @@ const collectTargets = (value) => {
 };
 
 const targets = new Set(
-  [
-    manifest.main,
-    manifest.module,
-    manifest.types,
-    ...collectTargets(manifest.exports),
-  ].filter(
+  [manifest.main, manifest.module, manifest.types, ...collectTargets(manifest.exports)].filter(
     (value) => typeof value === "string" && value.startsWith("./dist/"),
   ),
 );
@@ -105,9 +79,7 @@ const insideRoot = (path) => {
   const pathFromRoot = relative(root, path);
   return (
     pathFromRoot === "" ||
-    (!pathFromRoot.startsWith(`..${sep}`) &&
-      pathFromRoot !== ".." &&
-      !pathFromRoot.startsWith(sep))
+    (!pathFromRoot.startsWith(`..${sep}`) && pathFromRoot !== ".." && !pathFromRoot.startsWith(sep))
   );
 };
 
@@ -122,10 +94,7 @@ const walkRepository = async (path, relativePath = "") => {
   if (info.isDirectory()) {
     for (const entry of await readdir(path)) {
       if (!relativePath && ignoredRoots.has(entry)) continue;
-      await walkRepository(
-        resolve(path, entry),
-        relativePath ? `${relativePath}/${entry}` : entry,
-      );
+      await walkRepository(resolve(path, entry), relativePath ? `${relativePath}/${entry}` : entry);
     }
     return;
   }
@@ -136,9 +105,7 @@ await walkRepository(root);
 for (const path of repositoryFiles) {
   const pathReason = restrictedHaneokaPathReason(path);
   if (pathReason) fail(`${pathReason}: ${path}`);
-  const contentReason = restrictedHaneokaContentReason(
-    await readFile(resolve(root, path)),
-  );
+  const contentReason = restrictedHaneokaContentReason(await readFile(resolve(root, path)));
   if (contentReason) {
     fail(`${contentReason} found in repository file ${path}`);
   }
@@ -164,10 +131,7 @@ const walkPublishable = async (path, relativePath) => {
   }
   if (info.isDirectory()) {
     for (const entry of await readdir(path)) {
-      await walkPublishable(
-        resolve(path, entry),
-        relativePath ? `${relativePath}/${entry}` : entry,
-      );
+      await walkPublishable(resolve(path, entry), relativePath ? `${relativePath}/${entry}` : entry);
     }
     return;
   }
@@ -201,17 +165,14 @@ if (publishableBytes > 5 * 1024 * 1024) {
 }
 
 const builtJavaScript = await readFile(resolve(root, "dist/index.js"), "utf8");
-const importPattern =
-  /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s*)["']([^"']+)["']/gu;
+const importPattern = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s*)["']([^"']+)["']/gu;
 const allowedImports = new Set(["@haneoka/vega", "@haneoka/vega/plugin"]);
 const externalImports = new Set(
   [...builtJavaScript.matchAll(importPattern)]
     .map((match) => match[1])
     .filter((specifier) => specifier && !specifier.startsWith(".")),
 );
-const unexpectedImports = [...externalImports].filter(
-  (specifier) => !allowedImports.has(specifier),
-);
+const unexpectedImports = [...externalImports].filter((specifier) => !allowedImports.has(specifier));
 if (unexpectedImports.length > 0) {
   fail(`unexpected runtime imports: ${unexpectedImports.join(", ")}`);
 }

@@ -1,5 +1,4 @@
-export type HaneokaStoryResourceKind =
-  "background" | "still" | "sound" | "frame" | "effect" | "video" | "live2d";
+export type HaneokaStoryResourceKind = "background" | "still" | "sound" | "frame" | "effect" | "video" | "live2d";
 
 const identity = (value: unknown): string => String(value ?? "").trim();
 
@@ -13,13 +12,7 @@ export const haneokaStoryResourceAliases = (
   kind: HaneokaStoryResourceKind,
   entry: Readonly<Record<string, unknown>>,
 ): readonly string[] => {
-  const common = [
-    entry.resourceRef,
-    entry.id,
-    entry.assetId,
-    entry.sourcePath,
-    entry.url,
-  ];
+  const common = [entry.resourceRef, entry.id, entry.assetId, entry.sourcePath, entry.url];
   let values: unknown[];
 
   switch (kind) {
