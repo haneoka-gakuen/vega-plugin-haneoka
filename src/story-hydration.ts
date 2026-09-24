@@ -90,6 +90,8 @@ export interface StoryHydrationMissingResource {
 }
 
 export interface StoryHydrationOptions {
+  /** Native playback defaults for a known source release. */
+  runtimeProfile?: "intl-1.0.1";
   /** Editor previews omit unresolved media while normal playback remains strict. */
   missingResource?: "throw" | "omit";
   onMissingResource?: (resource: StoryHydrationMissingResource) => void;
@@ -306,15 +308,15 @@ export const hydrateStoryPayload = (
 
   return adaptHaneokaCharacterFields({
     ...payload,
-    runtime: {
-      ...runtime,
-      // The current international player waits after a voiced line and caps
-      // each serialized quality tier at 30 fps. Catalogs built with older
-      // player settings can still carry the previous values.
-      waitAfterVoiceTime: 0.6000000238418579,
-      targetFrameRateByQuality: [30, 30, 30, 30, 30],
-      targetFrameRate: 30,
-    },
+    runtime:
+      options.runtimeProfile === "intl-1.0.1"
+        ? {
+            ...runtime,
+            waitAfterVoiceTime: 0.6000000238418579,
+            targetFrameRateByQuality: [30, 30, 30, 30, 30],
+            targetFrameRate: 30,
+          }
+        : runtime,
     assets: {
       ...assets,
       backgrounds: backgroundEntries,
