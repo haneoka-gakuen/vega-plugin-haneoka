@@ -172,7 +172,12 @@ export const hydrateStoryPayload = (
   const backgrounds = resourceIndex(backgroundEntries, "background", aliases);
   const stills = resourceIndex(assets.stills, "still", aliases);
   const sounds = resourceIndex(assets.sounds, "sound", aliases);
-  const frames = resourceIndex(assets.frames, "frame", aliases);
+  const frameEntries = collectionValues(assets.frames).map((entry) =>
+    entry.name === "adv_frame_eyeblink_blink" && options.runtimeProfile === "intl-1.0.1"
+      ? { ...entry, oneShotSeconds: 0.8333333134651184 }
+      : entry,
+  );
+  const frames = resourceIndex(frameEntries, "frame", aliases);
   const effects = resourceIndex(assets.effects, "effect", aliases);
   const videos = resourceIndex(assets.videos, "video", aliases);
   const normalizedLive2dAssets = mapCollectionRecords(assets.live2d, normalizeHaneokaCharacterEntry);
