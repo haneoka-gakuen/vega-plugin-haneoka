@@ -1,6 +1,7 @@
 import type { AdvStory } from "@haneoka/vega";
 import { createHaneokaStoryAdapter, normalizeHaneokaCharacterEntry } from "./story-adapter";
 import { haneokaStoryResourceAliases, type HaneokaStoryResourceKind } from "./resource-aliases";
+import { HANEOKA_FRAME_ANIMATIONS } from "./frameAnimations";
 
 const adaptHaneokaCharacterFields = createHaneokaStoryAdapter({
   modelField: "live2d",
@@ -172,11 +173,16 @@ export const hydrateStoryPayload = (
   const backgrounds = resourceIndex(backgroundEntries, "background", aliases);
   const stills = resourceIndex(assets.stills, "still", aliases);
   const sounds = resourceIndex(assets.sounds, "sound", aliases);
-  const frameEntries = collectionValues(assets.frames).map((entry) =>
-    entry.name === "adv_frame_eyeblink_blink" && options.runtimeProfile === "intl-1.0.1"
-      ? { ...entry, oneShotSeconds: 0.8333333134651184 }
-      : entry,
-  );
+  const frameEntries = collectionValues(assets.frames).map((entry) => {
+    if (options.runtimeProfile !== "intl-1.0.1") return entry;
+    const name = String(entry.name || "");
+    const animation = HANEOKA_FRAME_ANIMATIONS[name];
+    return {
+      ...entry,
+      ...(animation ? { animation } : {}),
+      ...(name === "adv_frame_eyeblink_blink" ? { oneShotSeconds: 0.8333333134651184 } : {}),
+    };
+  });
   const frames = resourceIndex(frameEntries, "frame", aliases);
   const effects = resourceIndex(assets.effects, "effect", aliases);
   const videos = resourceIndex(assets.videos, "video", aliases);
