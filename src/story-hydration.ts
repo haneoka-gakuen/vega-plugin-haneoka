@@ -1,7 +1,6 @@
 import type { AdvStory } from "@haneoka/vega";
 import { createHaneokaStoryAdapter, normalizeHaneokaCharacterEntry } from "./story-adapter";
 import { haneokaStoryResourceAliases, type HaneokaStoryResourceKind } from "./resource-aliases";
-import { HANEOKA_FRAME_ANIMATIONS } from "./frameAnimations";
 
 const adaptHaneokaCharacterFields = createHaneokaStoryAdapter({
   modelField: "live2d",
@@ -91,8 +90,6 @@ export interface StoryHydrationMissingResource {
 }
 
 export interface StoryHydrationOptions {
-  /** Native playback defaults for a known source release. */
-  runtimeProfile?: "intl-1.0.1";
   /** Editor previews omit unresolved media while normal playback remains strict. */
   missingResource?: "throw" | "omit";
   onMissingResource?: (resource: StoryHydrationMissingResource) => void;
@@ -174,13 +171,12 @@ export const hydrateStoryPayload = (
   const stills = resourceIndex(assets.stills, "still", aliases);
   const sounds = resourceIndex(assets.sounds, "sound", aliases);
   const frameEntries = collectionValues(assets.frames).map((entry) => {
-    if (options.runtimeProfile !== "intl-1.0.1") return entry;
-    const name = String(entry.name || "");
-    const animation = HANEOKA_FRAME_ANIMATIONS[name];
+    const animation = record(entry.animation);
     return {
       ...entry,
-      ...(animation ? { animation } : {}),
-      ...(name === "adv_frame_eyeblink_blink" ? { oneShotSeconds: 0.8333333134651184 } : {}),
+      ...(entry.name === "adv_frame_eyeblink_blink" && animation.loop === false && Number(animation.duration) > 0
+        ? { oneShotSeconds: Number(animation.duration) }
+        : {}),
     };
   });
   const frames = resourceIndex(frameEntries, "frame", aliases);
@@ -319,15 +315,7 @@ export const hydrateStoryPayload = (
 
   return adaptHaneokaCharacterFields({
     ...payload,
-    runtime:
-      options.runtimeProfile === "intl-1.0.1"
-        ? {
-            ...runtime,
-            waitAfterVoiceTime: 0.6000000238418579,
-            targetFrameRateByQuality: [30, 30, 30, 30, 30],
-            targetFrameRate: 30,
-          }
-        : runtime,
+    runtime,
     assets: {
       ...assets,
       backgrounds: backgroundEntries,
