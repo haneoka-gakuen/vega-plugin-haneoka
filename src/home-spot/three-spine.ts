@@ -36,6 +36,7 @@ interface NormalizedLayer {
   readonly sortingOrder: number;
   readonly animation: string;
   readonly skeleton: string;
+  readonly atlas: string;
   readonly binary: boolean;
   readonly scale: number;
   readonly transform?: readonly number[];
@@ -183,6 +184,7 @@ const normalizeLayer = (
     sortingOrder: Number(layer.sortingOrder) || 0,
     animation: firstString(runtime.animation, layer.animation, defaultAnimation),
     skeleton,
+    atlas: firstString(runtime.atlas, atlas),
     binary:
       Boolean(runtime.skel) || firstString(runtime.format) === "spine-binary" || /\.skel(?:[?#].*)?$/iu.test(skeleton),
     scale: Number(runtime.scale) || Number(defaultScale) || 0.01,
@@ -313,7 +315,9 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
       this.resizeObserver.observe(this.options.host);
     }
 
-    this.manager.loadTextureAtlas(atlas);
+    for (const atlasSource of new Set(layers.map((layer) => layer.atlas))) {
+      this.manager.loadTextureAtlas(atlasSource);
+    }
     for (const layer of layers) {
       if (layer.binary) this.manager.loadBinary(layer.skeleton);
       else this.manager.loadJson(layer.skeleton);
@@ -335,8 +339,8 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
     configureBackground(this.background, this.renderer);
     this.scene.add(this.background);
 
-    const atlasValue = this.manager.require(atlas);
     this.instances = layers.map((layer) => {
+      const atlasValue = this.manager.require(layer.atlas);
       const attachmentLoader = new this.modules.AtlasAttachmentLoader(atlasValue);
       const parser = layer.binary
         ? new this.modules.SkeletonBinary(attachmentLoader)
