@@ -306,6 +306,15 @@ export const hydrateStoryPayload = (
 
   return adaptHaneokaCharacterFields({
     ...payload,
+    runtime: {
+      ...runtime,
+      // The current international player waits after a voiced line and caps
+      // each serialized quality tier at 30 fps. Catalogs built with older
+      // player settings can still carry the previous values.
+      waitAfterVoiceTime: 0.6000000238418579,
+      targetFrameRateByQuality: [30, 30, 30, 30, 30],
+      targetFrameRate: 30,
+    },
     assets: {
       ...assets,
       backgrounds: backgroundEntries,
