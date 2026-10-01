@@ -59,7 +59,8 @@ export interface HaneokaHomeSpotRuntimeModules {
   readonly three: object;
   readonly GLTFLoader: unknown;
   readonly spine: Readonly<{
-    AssetManager: unknown;
+    TextureAtlas: unknown;
+    ThreeJsTexture: unknown;
     AtlasAttachmentLoader: unknown;
     SkeletonBinary: unknown;
     SkeletonJson: unknown;
@@ -67,10 +68,22 @@ export interface HaneokaHomeSpotRuntimeModules {
   }>;
 }
 
+export interface HaneokaHomeSpotResources {
+  /** Encoded bytes only. The scene owns all decoded/GPU objects. */
+  load(key: string, signal: AbortSignal): Promise<Uint8Array>;
+}
+
+export interface HaneokaHomeSpotPngOptions {
+  readonly width?: number;
+  readonly height?: number;
+}
+
 export interface CreateHaneokaHomeSpotSceneOptions {
   readonly host: HTMLElement;
   readonly descriptor: HaneokaHomeSpotSceneDescriptor;
   readonly modules: HaneokaHomeSpotRuntimeModules;
+  /** Omit to use normal URL fetching with the same scene lifetime signal. */
+  readonly resources?: HaneokaHomeSpotResources;
   readonly clearColor: string;
   readonly ariaLabel: string;
   readonly selectedCharacterId?: number;
@@ -88,5 +101,7 @@ export interface HaneokaHomeSpotSceneController {
   selectAt(clientX: number, clientY: number): number;
   replay(): void;
   resize(): void;
+  /** Capture the current camera/animation frame; restores its viewport. */
+  exportPng(options?: HaneokaHomeSpotPngOptions): Promise<Blob>;
   dispose(): void;
 }

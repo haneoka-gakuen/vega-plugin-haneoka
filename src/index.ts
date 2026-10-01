@@ -160,5 +160,6 @@ export {
   type HaneokaChatIconSprites,
 } from "./source-assets";
 export * from "./home-spot";
+export type { HaneokaHomeSpotResources, HaneokaHomeSpotPngOptions } from "./home-spot/types";
 
 export { projectHaneokaTranscript, type HaneokaTranscriptEntry } from "./transcript.js";
