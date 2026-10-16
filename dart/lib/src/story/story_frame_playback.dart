@@ -5,6 +5,7 @@ import 'story_command_decoder.dart';
 import 'story_frame_source.dart';
 import 'story_frame_snapshot_catalog.dart';
 import 'story_scene_state.dart';
+import 'story_render_profile_binding.dart';
 import 'story_timeline.dart';
 part 'story_frame_playback_data.dart';
 
@@ -229,6 +230,7 @@ final class StoryFramePlayback {
     required double currentSpeed,
     this.actualLayoutResolver,
     this.actualSnapshotCatalog,
+    this.renderProfile,
   }) : _lastUs = actualStoryUs,
        _updateIndex = actualUpdateIndex {
     _inputs(actualStoryUs, currentSpeed, actualUpdateIndex);
@@ -245,8 +247,14 @@ final class StoryFramePlayback {
       _definitionOrder.add(entry.key);
     }
     final catalog = actualSnapshotCatalog;
+    if (renderProfile != null &&
+        renderProfile!.chapterIdentity != sourceIdentity) {
+      throw const FormatException('frame_render_profile_chapter');
+    }
     if (catalog != null &&
-        (catalog.sourceId != sourceIdentity.sourceId ||
+        (catalog.sourceId !=
+                (renderProfile?.packetSource.sourceId ??
+                    sourceIdentity.sourceId) ||
             catalog.definitionFingerprints.length != _instances.length ||
             !_instances.keys.every(
               catalog.definitionFingerprints.containsKey,
@@ -255,6 +263,7 @@ final class StoryFramePlayback {
     }
   }
   final StorySourceIdentity sourceIdentity;
+  final StoryRenderProfileBinding? renderProfile;
   final int sourceEpoch, actualFadeEase;
   final StoryFrameLayoutResolver? actualLayoutResolver;
   final StoryFrameSnapshotCatalog? actualSnapshotCatalog;

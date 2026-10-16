@@ -51,6 +51,7 @@ export 'src/story/story_parameter_loop.dart';
 export 'src/story/story_image_mesh.dart';
 export 'src/story/story_frame_compiler.dart';
 export 'src/story/story_frame_snapshot_catalog.dart';
+export 'src/story/story_render_profile_binding.dart';
 
 export 'src/story/story_chat_window_source.dart';
 export 'src/story/story_chat_runtime.dart';
