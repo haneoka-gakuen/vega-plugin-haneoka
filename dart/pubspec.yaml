@@ -1,0 +1,27 @@
+name: vega_plugin_haneoka
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: ^3.13.5
+dependencies:
+  characters: ^1.4.1
+  haneoka_render_profile:
+    git:
+      url: https://github.com/haneoka-gakuen/haneoka-render-profile.git
+      ref: 63bf1dfb76e0cd609cc076560b0c6c47d0305a4a
+  render_contracts:
+    git:
+      url: https://github.com/haneoka-gakuen/render-kernel-flutter.git
+      ref: d810428b8719d083ab97dda77dc3ce7de0ace444
+      path: packages/render_contracts
+  vector_math: ^2.2.0
+  vega_protocol:
+    git:
+      url: https://github.com/haneoka-gakuen/vega.git
+      ref: 9959c66b0d2036c4a4cb2c9dd37dc698da9748fe
+      path: packages/protocol/dart
+  vega_plugin_cubism:
+    git:
+      url: https://github.com/haneoka-gakuen/vega-plugin-cubism.git
+      ref: a05331a246be404c25cd1f5b3e99fac4b2af7254
+      path: dart

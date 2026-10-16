@@ -8,3 +8,5 @@ coverage/
 dist/
 node_modules/
 .dependencies/
+dart/.dart_tool/
+dart/pubspec_overrides.yaml
