@@ -49,15 +49,18 @@ final class StoryLayoutElementData {
       );
 
   /// TMP's ILayoutElement contract supplies zero minimum and negative
-  /// flexibility; preferred dimensions come from the actual glyph layout.
-  factory StoryLayoutElementData.measuredTmp(StoryGlyphLayout layout) =>
-      StoryLayoutElementData(
-        priority: 0,
-        minimum: const [0, 0],
-        preferred: [layout.width, layout.height],
-        flexible: const [-1, -1],
-        ignoreLayout: false,
-      );
+  /// flexibility; preferred height includes the source TMP vertical margins.
+  factory StoryLayoutElementData.measuredTmp(
+    StoryGlyphLayout layout, {
+    double marginTop = 0,
+    double marginBottom = 0,
+  }) => StoryLayoutElementData(
+    priority: 0,
+    minimum: const [0, 0],
+    preferred: [layout.width, layout.height + marginTop + marginBottom],
+    flexible: const [-1, -1],
+    ignoreLayout: false,
+  );
 }
 
 final class StoryLayoutGroupData {

@@ -624,6 +624,9 @@ StoryChatCompiledFrame compileStoryChat({
   beginRetainedLayout();
   final paths = {for (final n in graph.nodes.values) n.path: n.id};
   final measured = <String, StoryGlyphLayout>{};
+  final authoredElements = Map<String, List<StoryLayoutElementData>>.of(
+    elements,
+  );
   StoryChatTextRequest request(_Node n, double w, double h) =>
       StoryChatTextRequest(
         key: n.id,
@@ -635,9 +638,22 @@ StoryChatCompiledFrame compileStoryChat({
         height: h,
         visibleCharacters: n.visibleCharacters,
       );
+  void measureNode(_Node n, double width, double height) {
+    final glyphs = measureText(request(n, width, height));
+    measured[n.path] = glyphs;
+    final margin = n.textComponent!['m_margin'] as Map;
+    elements[n.path] = [
+      ...?authoredElements[n.path],
+      StoryLayoutElementData.measuredTmp(
+        glyphs,
+        marginTop: _number(margin['y']),
+        marginBottom: _number(margin['w']),
+      ),
+    ];
+  }
+
   for (final n in graph.nodes.values) {
-    if (n.textComponent != null)
-      measured[n.path] = measureText(request(n, 0, 0));
+    if (n.textComponent != null) measureNode(n, 0, 0);
   }
   layoutRetainedMeasuredStoryUi(
     roots: roots,
@@ -650,8 +666,7 @@ StoryChatCompiledFrame compileStoryChat({
   );
   for (final n in graph.nodes.values) {
     final rect = retained.basePlacements[n.id]!.localRect;
-    if (n.textComponent != null)
-      measured[n.path] = measureText(request(n, rect.width, rect.height));
+    if (n.textComponent != null) measureNode(n, rect.width, rect.height);
   }
   var layout = layoutRetainedMeasuredStoryUi(
     roots: roots,
