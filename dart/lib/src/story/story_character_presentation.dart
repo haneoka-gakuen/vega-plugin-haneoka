@@ -2,6 +2,7 @@ import 'story_character_controls.dart';
 import 'story_character_order.dart';
 import 'story_character_placement.dart';
 import 'story_command_decoder.dart';
+import 'story_presentation_timing.dart';
 
 /// Numeric presentation state shared by the Source controller and its host.
 /// Resources, model evaluation and accepted scene time belong to the caller.
@@ -58,6 +59,7 @@ final class StoryCharacterPresentation {
     required bool visible,
     required int atUs,
     required StoryCharacterPresentationSink<T> apply,
+    StoryPresentationTiming timing = const StoryPresentationTiming(),
   }) {
     final targets = command.targets.isEmpty
         ? [command.payload['targetName'] as String]
@@ -82,10 +84,10 @@ final class StoryCharacterPresentation {
         apply(actor, const StoryCharacterDepthSort());
       }
       actor.fadeStart = atUs;
-      actor.fadeDuration = command.durationUs;
+      actor.fadeDuration = timing.durationUs(command.durationUs);
       actor.from = actor.opacity;
       actor.to = visible ? 1 : 0;
-      if (command.durationUs == 0) {
+      if (actor.fadeDuration == 0) {
         actor.opacity = actor.to;
         if (!visible) apply(actor, const StoryCharacterVisibility(false));
       }

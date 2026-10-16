@@ -46,6 +46,7 @@ export 'src/story/story_preparation_plan.dart';
 export 'src/story/story_character_lighting.dart';
 export 'src/story/story_character_controls.dart';
 export 'src/story/story_character_presentation.dart';
+export 'src/story/story_presentation_timing.dart';
 export 'src/story/story_parameter_loop.dart';
 export 'src/story/story_image_mesh.dart';
 export 'src/story/story_frame_compiler.dart';
