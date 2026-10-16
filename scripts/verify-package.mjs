@@ -93,7 +93,8 @@ const walkRepository = async (path, relativePath = "") => {
   }
   if (info.isDirectory()) {
     for (const entry of await readdir(path)) {
-      if (!relativePath && ignoredRoots.has(entry)) continue;
+      if ((!relativePath && ignoredRoots.has(entry)) || entry === ".dart_tool" || entry === "pubspec_overrides.yaml")
+        continue;
       await walkRepository(resolve(path, entry), relativePath ? `${relativePath}/${entry}` : entry);
     }
     return;
@@ -102,10 +103,23 @@ const walkRepository = async (path, relativePath = "") => {
 };
 
 await walkRepository(root);
+const documentationBrandFiles = new Set([
+  "docs/brand/favicon.svg",
+  "docs/brand/icon-512.png",
+  "docs/brand/social.svg",
+  "docs/brand/social.png",
+]);
 for (const path of repositoryFiles) {
   const pathReason = restrictedHaneokaPathReason(path);
-  if (pathReason) fail(`${pathReason}: ${path}`);
-  const contentReason = restrictedHaneokaContentReason(await readFile(resolve(root, path)));
+  const documentationArtwork = documentationBrandFiles.has(path);
+  if (pathReason && !documentationArtwork) fail(`${pathReason}: ${path}`);
+  const bytes = await readFile(resolve(root, path));
+  if (documentationArtwork && path.endsWith(".png")) {
+    if (!bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))
+      fail(`documentation PNG signature is invalid: ${path}`);
+    continue;
+  }
+  const contentReason = restrictedHaneokaContentReason(bytes);
   if (contentReason) {
     fail(`${contentReason} found in repository file ${path}`);
   }

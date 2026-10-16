@@ -67,7 +67,16 @@ export const restrictedHaneokaPathReason = (path) => {
   const segments = normalized.split("/").filter(Boolean);
   const basename = segments.at(-1) ?? "";
 
-  if (segments.slice(0, -1).some((segment) => restrictedDirectory.test(segment))) {
+  // Dart character adapters reference the host's optional model provider.
+  const dartCharacterAdapter = /^dart\/lib\/src\/cubism\/[a-z_]+\.dart$/u.test(normalized);
+  if (
+    segments
+      .slice(0, -1)
+      .some(
+        (segment, index) =>
+          restrictedDirectory.test(segment) && !(dartCharacterAdapter && index === 3 && segment === "cubism"),
+      )
+  ) {
     return "restricted SDK, runtime, model, or asset directory";
   }
   if (
