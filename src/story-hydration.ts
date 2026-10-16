@@ -1,6 +1,7 @@
 import type { AdvStory } from "@haneoka/vega";
 import { createHaneokaStoryAdapter, normalizeHaneokaCharacterEntry } from "./story-adapter";
 import { haneokaStoryResourceAliases, type HaneokaStoryResourceKind } from "./resource-aliases";
+import { normalizeHaneokaFrameEntry } from "./frame-playback";
 
 const adaptHaneokaCharacterFields = createHaneokaStoryAdapter({
   modelField: "live2d",
@@ -173,7 +174,7 @@ export const hydrateStoryPayload = (
   const frameEntries = collectionValues(assets.frames).map((entry) => {
     const animation = record(entry.animation);
     return {
-      ...entry,
+      ...normalizeHaneokaFrameEntry(entry),
       ...(entry.name === "adv_frame_eyeblink_blink" && animation.loop === false && Number(animation.duration) > 0
         ? { oneShotSeconds: Number(animation.duration) }
         : {}),
@@ -241,6 +242,8 @@ export const hydrateStoryPayload = (
       const value = resolvedEntry(postEffects, postEffectRef, "post-effect", options);
       if (value) result.postEffect = value;
     }
+    if (result.frame && typeof result.frame === "object" && !Array.isArray(result.frame))
+      result.frame = normalizeHaneokaFrameEntry(result.frame as Record<string, unknown>);
     if (!result.frame && frameRef) {
       const value = resolvedIndexedEntry(frames, frameRef, "frame", options);
       if (value) result.frame = value;

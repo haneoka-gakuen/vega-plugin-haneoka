@@ -1,4 +1,5 @@
 import type { AdvStory } from "@haneoka/vega";
+import { withHaneokaSceneProfile } from "./scene-profile";
 import { haneokaFallbackMotionSyncAudioScales } from "./motion-sync-profile";
 
 export const HANEOKA_ADV_CHAT_DEFAULT_DATA_ROOT = "Assets/AddressableResources/Adv/Chat/Data/_template/data";
@@ -163,7 +164,7 @@ export const createHaneokaStoryAdapter = (fields: HaneokaLegacyCharacterFields) 
   if (modelField === keyField) throw new TypeError("Legacy character model and key fields must differ");
 
   return (source: AdvStory): AdvStory => {
-    const story = structuredClone(source);
+    const story = structuredClone(withHaneokaSceneProfile(source));
     // Descriptor identity is part of Vega's animation-usage binding: commands
     // that resolve the same source model must stay on one shared descriptor so
     // the preloader can select the referenced motions instead of conservatively
@@ -177,7 +178,11 @@ export const createHaneokaStoryAdapter = (fields: HaneokaLegacyCharacterFields) 
       normalizedCharacterModels.set(normalized, normalized);
       return normalized;
     };
-    const runtime = recordValue(story.runtime);
+    const runtime: Record<string, unknown> = {
+      ...recordValue(story.runtime),
+      retainHistoricalCharacterBindings: true,
+    };
+    story.runtime = runtime as NonNullable<AdvStory["runtime"]>;
     const chatAssets = recordValue(runtime.chatAssets);
     const defaultDataRoot = firstString(chatAssets.defaultDataRoot).replace(/\/+$/u, "");
     if (!defaultDataRoot || defaultDataRoot === HANEOKA_ADV_CHAT_LEGACY_DEFAULT_DATA_ROOT) {

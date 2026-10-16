@@ -41,6 +41,16 @@
       "types": "./dist/transcript.d.ts",
       "import": "./dist/transcript.js",
       "default": "./dist/transcript.js"
+    },
+    "./scene-profile": {
+      "types": "./dist/scene-profile.d.ts",
+      "import": "./dist/scene-profile.js",
+      "default": "./dist/scene-profile.js"
+    },
+    "./chat-profile": {
+      "types": "./dist/chat-profile.d.ts",
+      "import": "./dist/chat-profile.js",
+      "default": "./dist/chat-profile.js"
     }
   },
   "scripts": {

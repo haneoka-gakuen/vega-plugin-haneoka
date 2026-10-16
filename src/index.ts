@@ -120,6 +120,7 @@ const sanitizeNamespace = (value: string): string => {
 };
 
 export default createHaneokaPlugin;
+export * from "./scene-profile";
 export {
   createHaneokaStoryAdapter,
   HANEOKA_ADV_CHAT_DEFAULT_DATA_ROOT,
@@ -129,6 +130,7 @@ export {
   type HaneokaLegacyCharacterFields,
 } from "./story-adapter";
 export { haneokaStoryResourceAliases, type HaneokaStoryResourceKind } from "./resource-aliases";
+export { normalizeHaneokaFrameEntry } from "./frame-playback";
 export {
   hydrateStoryPayload,
   hydrateStoryTextPayload,
