@@ -23,5 +23,5 @@ dependencies:
   vega_plugin_cubism:
     git:
       url: https://github.com/haneoka-gakuen/vega-plugin-cubism.git
-      ref: b63d51a926fd4ae1ff3fd1889ea65e082b2000f7
+      ref: fd4ff01be937c9ca478fede6a21723ec7686a508
       path: dart
