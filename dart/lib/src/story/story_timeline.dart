@@ -229,11 +229,47 @@ StoryPassKind _pass(int opcode) => switch (opcode) {
   _ => StoryPassKind.world,
 };
 
+/// Shared authored Voice/SE lookahead; hosts supply resource keys and decoders.
+final class StoryMediaPreparationPlan {
+  StoryMediaPreparationPlan(Iterable<StoryDecodedCommand> commands) {
+    final media = <StoryMediaEvent>[];
+    for (final command in commands) {
+      if (!command.ignoreData) {
+        _appendMedia(command, 0, media, forPreparation: true);
+      }
+    }
+    entries = List.unmodifiable(
+      media.where(
+        (event) =>
+            !event.stop &&
+            (event.kind == StoryMediaKind.voice ||
+                event.kind == StoryMediaKind.sfx),
+      ),
+    );
+  }
+  static const lookahead = 4, concurrency = 2;
+  late final List<StoryMediaEvent> entries;
+  List<StoryMediaEvent> upcoming(
+    int commandIndex,
+    String Function(StoryMediaEvent) keyOf,
+  ) {
+    final keys = <String>{}, selected = <StoryMediaEvent>[];
+    for (final event in entries) {
+      if (event.commandIndex < commandIndex || !keys.add(keyOf(event)))
+        continue;
+      selected.add(event);
+      if (selected.length == lookahead) break;
+    }
+    return List.unmodifiable(selected);
+  }
+}
+
 void _appendMedia(
   StoryDecodedCommand command,
   int atUs,
-  List<StoryMediaEvent> output,
-) {
+  List<StoryMediaEvent> output, {
+  bool forPreparation = false,
+}) {
   if (command.opcode == 15) {
     output.add(
       StoryMediaEvent(
@@ -261,7 +297,8 @@ void _appendMedia(
       ),
     );
   }
-  if (const {2, 28, 52}.contains(command.opcode)) {
+  if (const {2, 28, 52}.contains(command.opcode) ||
+      (forPreparation && command.opcode == 37)) {
     for (var index = 0; index < command.voiceIds.length; index++) {
       output.add(
         StoryMediaEvent(

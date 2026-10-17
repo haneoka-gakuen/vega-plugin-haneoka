@@ -4,11 +4,23 @@ import 'dart:typed_data';
 import 'package:vega_plugin_cubism/parameter_loop.dart';
 
 import 'cubism_parameter_state.dart';
+import 'cubism_model_bindings.dart';
 import 'cubism_unity_clip.dart';
 import 'cubism_unity_physics.dart';
 import 'cubism_unity_prefab.dart';
 import 'native_cubism_core.dart';
 import 'harmonic_motion.dart';
+
+NativeCubismUnityPrefab _preparePrefab(
+  List<Map> records,
+  NativeCubismUnityPrefab? prepared,
+  void Function(String phase, int microseconds)? onPhase,
+) {
+  final timer = Stopwatch()..start();
+  final result = prepared ?? NativeCubismUnityPrefab(records);
+  onPhase?.call('prefab', timer.elapsedMicroseconds);
+  return result;
+}
 
 /// One evaluated original Cubism prefab. Its caller owns the accepted scene
 /// clock, source epoch, texture resources and placement in the render graph.
@@ -17,18 +29,31 @@ final class NativeCubismModelHost {
     required NativeCubismCore core,
     required Uint8List mocBytes,
     required List<Map> prefabRecords,
+    NativeCubismUnityPrefab? preparedPrefab,
+    void Function(String phase, int microseconds)? onPreparationPhase,
     required this.randomUnit,
     this.breathMotionEnabled = true,
     double initialSeconds = 0,
     int initialFrame = -1,
-  }) : prefab = NativeCubismUnityPrefab(prefabRecords) {
+  }) : prefab = _preparePrefab(
+         prefabRecords,
+         preparedPrefab,
+         onPreparationPhase,
+       ) {
     if (!initialSeconds.isFinite || initialSeconds < 0 || initialFrame < -1) {
       throw ArgumentError('cubism_initial_clock');
     }
     _ownedSeconds = initialSeconds;
     _time = cubismF32(initialSeconds);
     _frame = initialFrame;
+    final preparation = Stopwatch()..start();
+    void phase(String name) {
+      onPreparationPhase?.call(name, preparation.elapsedMicroseconds);
+      preparation.reset();
+    }
+
     model = core.createModel(mocBytes);
+    phase('core.create');
     try {
       parameters = NativeCubismParameterState(model);
       _parameterLoop = CubismParameterLoop(
@@ -36,6 +61,7 @@ final class NativeCubismModelHost {
         saveParameters: parameters.save,
         overwrite: parameters.overwrite,
       );
+      phase('parameters');
       final character = prefab.component('Live2DCharacter');
       defaultMotion = character['DefaultMotionName'] as String;
       defaultExpression = character['DefaultExpressionName'] as String;
@@ -44,7 +70,7 @@ final class NativeCubismModelHost {
         if (_fadeData.containsKey(id)) {
           throw const FormatException('cubism_fade_instance_duplicate');
         }
-        _fadeData[id] = _FadeData(prefab.fadeMotions[i], parameters);
+        _fadeData[id] = _FadeData(prefab.preparedFadeMotions[i], parameters);
       }
       for (final clip in prefab.clips.values) {
         if (!_fadeData.containsKey(clip.instanceId)) {
@@ -52,7 +78,7 @@ final class NativeCubismModelHost {
         }
       }
       _expressions = [
-        for (final source in prefab.expressions)
+        for (final source in prefab.preparedExpressions)
           _ExpressionData(source, parameters),
       ];
       final authoredNames = (character['_expressionList'] as List)
@@ -112,24 +138,29 @@ final class NativeCubismModelHost {
       _blinkDeviation = _number(blink['MaximumDeviation']);
       _blinkRate = _number(blink['Timescale']);
       _scheduleBlink();
+      phase('bindings');
       final physics = prefab.rootComponents['CubismPhysicsController'];
       _physics = physics == null
           ? null
           : NativeCubismUnityPhysics(physics['_rig'] as Map, parameters);
       _physics?.stabilize();
+      phase('physics');
       parameters.writeCore();
       _pendingDrawables = model.evaluate();
+      phase('core.firstEvaluate');
       _drawables = [for (final row in _pendingDrawables) _DrawablePair(row)];
       final masks = _pendingDrawables.expand((row) => row.masks).toSet();
       for (final row in _drawables) {
         row.maskSource = masks.contains(row.source.sourceIndex);
       }
+      phase('drawables');
       if (defaultMotion.isNotEmpty) {
         playMotion(defaultMotion, fade: -1, repeat: true);
       }
       if (defaultExpression.isNotEmpty) {
         playExpression(defaultExpression, fade: -1);
       }
+      phase('defaults');
     } catch (_) {
       model.dispose();
       rethrow;
@@ -1382,9 +1413,7 @@ final class NativeCubismModelHost {
     }
   }
 
-  List<(String, Map)> _tagged(String type) => [
-    for (final row in prefab.tagged(type)) row,
-  ];
+  List<(String, Map)> _tagged(String type) => prefab.tagged(type);
   void _assertLive() {
     if (_disposed) throw StateError('cubism_host_disposed');
   }
@@ -1410,30 +1439,20 @@ final class _FadeCurve {
 }
 
 final class _FadeData {
-  _FadeData(Map source, NativeCubismParameterState state)
-    : fadeIn = _number(source['FadeInTime']),
-      fadeOut = _number(source['FadeOutTime']),
-      duration = _number(source['MotionLength']),
-      fadeIns = (source['ParameterFadeInTimes'] as List).map(_number).toList() {
-    final ids = (source['ParameterIds'] as List).cast<String>();
-    parameterCurveCount = ids.length;
-    final raw = (source['ParameterCurves'] as List).cast<Map>();
-    final fadeOuts = (source['ParameterFadeOutTimes'] as List)
-        .map(_number)
-        .toList();
-    if (ids.length != raw.length ||
-        ids.length != fadeIns.length ||
-        ids.length != fadeOuts.length) {
-      throw const FormatException('cubism_fade_channels');
-    }
+  _FadeData(NativeCubismFadeDefinition source, NativeCubismParameterState state)
+    : fadeIn = source.fadeIn,
+      fadeOut = source.fadeOut,
+      duration = source.duration,
+      fadeIns = source.fadeIns {
+    parameterCurveCount = source.channels.length;
     curves = [
-      for (var i = 0; i < ids.length; i++)
-        if (state.indices.containsKey(ids[i]))
+      for (final channel in source.channels)
+        if (state.indices.containsKey(channel.parameter))
           _FadeCurve(
-            state.indices[ids[i]]!,
-            NativeCubismFadeCurve(raw[i]),
-            fadeIns[i],
-            fadeOuts[i],
+            state.indices[channel.parameter]!,
+            channel.curve,
+            channel.fadeIn,
+            channel.fadeOut,
           ),
     ];
   }
@@ -1464,23 +1483,19 @@ final class _ExpressionDestination {
 }
 
 final class _ExpressionData {
-  _ExpressionData(Map source, NativeCubismParameterState state)
-    : name = (source['m_Name'] as String).replaceFirst(RegExp(r'\.exp3$'), ''),
-      fadeIn = math.max(
-        0,
-        _number(source['FadeInTime']) < 0 ? 1 : _number(source['FadeInTime']),
-      ),
-      fadeOut = math.max(
-        0,
-        _number(source['FadeOutTime']) < 0 ? 1 : _number(source['FadeOutTime']),
-      ) {
+  _ExpressionData(
+    NativeCubismExpressionDefinition source,
+    NativeCubismParameterState state,
+  ) : name = source.name,
+      fadeIn = source.fadeIn,
+      fadeOut = source.fadeOut {
     destinations = {
-      for (final row in (source['Parameters'] as List).cast<Map>())
-        if (state.indices.containsKey(row['Id']))
-          state.indices[row['Id']]!: _ExpressionDestination(
-            state.indices[row['Id']]!,
-            _number(row['Value']),
-            row['Blend'] as int,
+      for (final row in source.parameters)
+        if (state.indices.containsKey(row.id))
+          state.indices[row.id]!: _ExpressionDestination(
+            state.indices[row.id]!,
+            row.value,
+            row.blend,
           ),
     };
   }

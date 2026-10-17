@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'cubism_model_bindings.dart';
 import 'cubism_unity_clip.dart';
 
 /// Generic original-prefab data. The application supplies source-bound records;
@@ -70,8 +71,9 @@ final class NativeCubismUnityPrefab {
     for (final row in _records.values) {
       if (row['type'] != 'MonoBehaviour') continue;
       final data = row['data'] as Map;
-      if (_local(data['m_GameObject']) != rootGame) continue;
       final name = _script(data['m_Script']);
+      _componentsByType.putIfAbsent(name, () => []).add(data);
+      if (_local(data['m_GameObject']) != rootGame) continue;
       if (components.containsKey(name)) {
         throw FormatException('native_cubism_root_component_duplicate:$name');
       }
@@ -162,21 +164,36 @@ final class NativeCubismUnityPrefab {
           ),
       ]);
     }
+    preparedFadeMotions = List.unmodifiable([
+      for (final source in fadeMotions) NativeCubismFadeDefinition(source),
+    ]);
+    preparedExpressions = List.unmodifiable([
+      for (final source in expressions)
+        NativeCubismExpressionDefinition(source),
+    ]);
+    for (final type in const [
+      'CubismEyeBlinkParameter',
+      'CubismMouthParameter',
+      'CubismHarmonicMotionParameter',
+    ]) {
+      tagged(type);
+    }
   }
   final _records = <String, Map>{};
+  final _componentsByType = <String, List<Map>>{};
+  final _tagged = <String, List<(String, Map)>>{};
   late final String rootGame;
   late final Map<int, String> transformPaths;
   late final Map<String, Map> rootComponents;
   late final Map<String, NativeCubismUnityClip> clips;
   late final List<int> fadeInstanceIds;
   late final List<Map<String, Object?>> fadeMotions, expressions;
+  late final List<NativeCubismFadeDefinition> preparedFadeMotions;
+  late final List<NativeCubismExpressionDefinition> preparedExpressions;
 
-  List<(String, Map)> tagged(String type) {
+  List<(String, Map)> tagged(String type) => _tagged.putIfAbsent(type, () {
     final result = <(String, Map)>[];
-    for (final row in _records.values) {
-      if (row['type'] != 'MonoBehaviour') continue;
-      final data = row['data'] as Map;
-      if (_script(data['m_Script']) != type) continue;
+    for (final data in _componentsByType[type] ?? const <Map>[]) {
       final game = _record(_local(data['m_GameObject']), 'GameObject');
       final name = (game['data'] as Map)['m_Name'];
       if (name is! String) {
@@ -185,7 +202,7 @@ final class NativeCubismUnityPrefab {
       result.add((name, data));
     }
     return List.unmodifiable(result);
-  }
+  });
 
   Map component(String type) =>
       rootComponents[type] ??
