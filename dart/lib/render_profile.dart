@@ -60,3 +60,5 @@ export 'src/story/story_chat_compiler.dart';
 
 export 'src/story/story_frame_particle_source.dart';
 export 'src/story/story_frame_particles.dart';
+
+export 'src/story/story_character_motion.dart';
