@@ -925,6 +925,7 @@ StoryChatCompiledFrame compileStoryChat({
       NativeMaterial(
         texture: value.texture,
         recipe: value.recipe,
+        coverageChannel: value.coverageChannel,
         blend: value.blend,
         textureAlpha: value.textureAlpha,
         uniformFloats: value.uniformFloats,
