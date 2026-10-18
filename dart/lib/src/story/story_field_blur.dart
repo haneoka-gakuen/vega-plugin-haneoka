@@ -3,6 +3,40 @@ import 'dart:typed_data';
 
 import 'package:haneoka_render_profile/core.dart';
 
+import 'story_command_decoder.dart';
+
+/// Focus owns each blur channel only when both the runtime and focus settings
+/// enable it. Sharp focuses tween those owned channels to zero.
+final class StoryFocusBlurPlan {
+  StoryFocusBlurPlan.fromCommand(
+    StoryDecodedCommand command, {
+    required Map<String, Object?> runtime,
+    required Map settings,
+    required Map focus,
+  }) {
+    final sharp = command.parameter(0)?.trim().toLowerCase() == 'sharp';
+    bool enabled(Object? value) => value == true || value == 1;
+    double? target(String runtimeKey, String enabledKey, String intensityKey) =>
+        runtime[runtimeKey] == true && enabled(settings[enabledKey])
+        ? sharp
+              ? 0
+              : (focus[intensityKey] as num).toDouble().clamp(0.0, 1.0)
+        : null;
+    backgroundIntensity = target(
+      'allowBackgroundBlur',
+      '_backgroundBlurEnabled',
+      '_backgroundBlurIntensity',
+    );
+    characterIntensity = target(
+      'allowCharacterBlur',
+      '_characterBlurEnabled',
+      '_characterBlurIntensity',
+    );
+  }
+
+  late final double? backgroundIntensity, characterIntensity;
+}
+
 /// The formal field renderer stores blur on its five camera entries. Models
 /// registered into an entry share its value.
 final class StoryCharacterBlurChannels {
