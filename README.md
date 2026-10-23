@@ -79,6 +79,12 @@ offer one.
 | `resolveHaneokaLive2DCatalogSource` | Reads the Live2D catalogue, including background-model paths. |
 | `haneokaFallbackMotionSyncAudioScales` | Vowel-to-mouth scales for lip sync when a model has no MotionSync data. |
 
+## Native Cubism controls
+
+The Dart `NativeCubismModelHost` evaluates source prefabs on the host's accepted
+scene clock. `setBreathMotionEnabled` changes harmonic breathing on the next
+accepted update while retaining the current motion, expression and physics state.
+
 ## Chat phone
 
 `resolveHaneokaChatIconSprites` and `HANEOKA_CHAT_ICON_SOURCE_PATHS` provide
