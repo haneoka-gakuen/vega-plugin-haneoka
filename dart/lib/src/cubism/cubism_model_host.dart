@@ -32,10 +32,11 @@ final class NativeCubismModelHost {
     NativeCubismUnityPrefab? preparedPrefab,
     void Function(String phase, int microseconds)? onPreparationPhase,
     required this.randomUnit,
-    this.breathMotionEnabled = true,
+    bool breathMotionEnabled = true,
     double initialSeconds = 0,
     int initialFrame = -1,
-  }) : prefab = _preparePrefab(
+  }) : _breathMotionEnabled = breathMotionEnabled,
+       prefab = _preparePrefab(
          prefabRecords,
          preparedPrefab,
          onPreparationPhase,
@@ -168,7 +169,8 @@ final class NativeCubismModelHost {
   }
   final NativeCubismUnityPrefab prefab;
   final double Function() randomUnit;
-  final bool breathMotionEnabled;
+  bool _breathMotionEnabled;
+  bool get breathMotionEnabled => _breathMotionEnabled;
   late final NativeCubismModel model;
   late final NativeCubismParameterState parameters;
   late final String defaultMotion, defaultExpression;
@@ -184,7 +186,7 @@ final class NativeCubismModelHost {
   late final List<int> _eyeTags, _mouthTags, _blinkNeutralTargets;
   late final List<_Harmonic> _harmonics;
   late final int _harmonicBlendMode;
-  late final bool _harmonicEnabled;
+  late bool _harmonicEnabled;
   late final List<double> _harmonicRates;
   late final double _blinkMean, _blinkDeviation, _blinkRate;
   double _blinkCountdown = 0, _blinkTime = 0, _blinkStart = 0;
@@ -221,6 +223,14 @@ final class NativeCubismModelHost {
   void setEyeLook(double? x, double? y) {
     _lookX = x;
     _lookY = y;
+  }
+
+  void setBreathMotionEnabled(bool enabled) {
+    _assertLive();
+    _breathMotionEnabled = enabled;
+    final source = prefab.component('CubismHarmonicMotionController');
+    _harmonicEnabled =
+        enabled && (source['m_Enabled'] == 1 || source['m_Enabled'] == true);
   }
 
   /// SmoothChangeToLook's zero-duration path updates deformation immediately.
