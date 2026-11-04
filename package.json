@@ -51,6 +51,11 @@
       "types": "./dist/chat-profile.d.ts",
       "import": "./dist/chat-profile.js",
       "default": "./dist/chat-profile.js"
+    },
+    "./story-hydration": {
+      "types": "./dist/story-hydration.d.ts",
+      "import": "./dist/story-hydration.js",
+      "default": "./dist/story-hydration.js"
     }
   },
   "scripts": {

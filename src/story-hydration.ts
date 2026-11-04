@@ -91,6 +91,7 @@ export interface StoryHydrationMissingResource {
 }
 
 export interface StoryHydrationOptions {
+  applyHaneokaMotionAliases?: boolean;
   /** Editor previews omit unresolved media while normal playback remains strict. */
   missingResource?: "throw" | "omit";
   onMissingResource?: (resource: StoryHydrationMissingResource) => void;
@@ -100,6 +101,7 @@ export interface StoryHydrationOptions {
 
 const unresolvedResource = (key: unknown, kind: string, options: StoryHydrationOptions): undefined => {
   const identity = String(key || "");
+  if (!identity || identity.toLowerCase() === "none") return undefined;
   if (options.missingResource !== "omit") {
     throw new Error(`Story ${kind} reference is unresolved: ${identity || "<empty>"}`);
   }
@@ -219,7 +221,7 @@ export const hydrateStoryPayload = (
       ...fields
     } = command;
     const result: Record<string, unknown> = { ...fields };
-    if (typeof result.motionName === "string") {
+    if (options.applyHaneokaMotionAliases !== false && typeof result.motionName === "string") {
       result.motionName = HANEOKA_MOTION_ALIASES.get(result.motionName) ?? result.motionName;
     }
     if (!result.background && backgroundRef) {
@@ -260,7 +262,7 @@ export const hydrateStoryPayload = (
     if (needsHydratedVoices && Array.isArray(voiceRefs)) {
       result.voices = presentRecords(voiceRefs.map((key) => resolvedIndexedEntry(sounds, key, "voice", options)));
     }
-    if (!result.live2d && result.live2dKey) {
+    if (!result.characterModel && !result.live2d && result.live2dKey) {
       const value = resolvedIndexedEntry(live2d, result.live2dKey, "Live2D", options);
       if (value) result.live2d = value;
     }

@@ -8,6 +8,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
+        "story-hydration": resolve(root, "src/story-hydration.ts"),
         index: resolve(root, "src/index.ts"),
         transcript: resolve(root, "src/transcript.ts"),
         "scene-profile": resolve(root, "src/scene-profile.ts"),

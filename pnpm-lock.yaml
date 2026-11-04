@@ -11,6 +11,9 @@ importers:
       '@haneoka/vega':
         specifier: ^0.1.0
         version: link:.dependencies/vega
+      '@haneoka/vega-protocol':
+        specifier: workspace:*
+        version: link:.dependencies/vega/packages/protocol
       '@types/node':
         specifier: ^26.1.0
         version: 26.1.1
