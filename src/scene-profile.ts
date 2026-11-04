@@ -28,6 +28,35 @@ export const HANEOKA_STAGE_GEOMETRY = Object.freeze({
   focusAnchors,
 });
 
+export const HANEOKA_CHARACTER_FRAMING = Object.freeze({
+  basePosition: HANEOKA_STAGE_GEOMETRY.characterBasePosition,
+  baseScale: 1.6,
+  framing: Object.freeze({ head: point(0, 0.4), stomach: point(0, 0.07), eyeSpan: 0.0735 }),
+});
+
+export function planHaneokaStageBlocking(
+  actors: readonly { target: string; order: number }[],
+): Map<string, ScenePoint> {
+  const stage = HANEOKA_STAGE_GEOMETRY;
+  const bodyWidth =
+    HANEOKA_CHARACTER_FRAMING.framing.eyeSpan * HANEOKA_CHARACTER_FRAMING.baseScale * stage.characterFieldScale * 5;
+  const viewWidth = 2 * stage.characterFieldPosition.z * Math.tan((stage.fov * Math.PI) / 360) * (16 / 9);
+  const ordered = actors
+    .map((actor, index) => ({ ...actor, index }))
+    .sort((a, b) => a.order - b.order || a.index - b.index);
+  const spacing = Math.min(bodyWidth, Math.max(0, viewWidth - bodyWidth) / Math.max(1, ordered.length - 1));
+  return new Map(
+    ordered.map(({ target }, index) => [
+      target,
+      {
+        x: stage.characterFieldPosition.x + (index - (ordered.length - 1) / 2) * spacing,
+        y: stage.characterFieldPosition.y + stage.characterBasePosition.y * stage.characterFieldScale,
+        z: stage.characterFieldPosition.z + stage.characterBasePosition.z * stage.characterFieldScale,
+      },
+    ]),
+  );
+}
+
 /** Haneoka calibration can be selected independently from the input format. */
 export function withHaneokaSceneProfile<Story extends AdvStory>(story: Story): Story {
   return {
