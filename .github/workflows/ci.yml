@@ -27,6 +27,7 @@ jobs:
         with:
           repository: haneoka-gakuen/vega
           path: vega-plugin-haneoka/.dependencies/vega
+          ref: 2fa1b39c1176852db38a45b453c737e8e3439f5d
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
