@@ -227,7 +227,7 @@ const configureSpine = (instance: SpineInstance, renderer: RuntimeValue): void =
   const anisotropy = renderer.capabilities.getMaxAnisotropy();
   instance.spine.traverse((object: RuntimeValue) => {
     if (!object.isMesh) return;
-    object.renderOrder = 100 + instance.sortingOrder;
+    object.renderOrder = instance.sortingOrder;
     const materials = Array.isArray(object.material) ? object.material : [object.material];
     for (const material of materials) {
       if (!material) continue;
@@ -359,17 +359,14 @@ class ThreeSpineHomeSpotScene implements HaneokaHomeSpotSceneController {
     this.renderer.setTransparentSort((left: RuntimeValue, right: RuntimeValue) => {
       const a = this.layerOrders.get(left.object.parent);
       const b = this.layerOrders.get(right.object.parent);
-      if (a !== undefined && b !== undefined) {
-        return (
-          a - b || left.object.parent.children.indexOf(left.object) - right.object.parent.children.indexOf(right.object)
-        );
+      if (a !== undefined && a === b) {
+        return left.object.parent.children.indexOf(left.object) - right.object.parent.children.indexOf(right.object);
       }
-      if (a !== undefined) return 1;
-      if (b !== undefined) return -1;
       return (
         left.groupOrder - right.groupOrder ||
         left.renderOrder - right.renderOrder ||
         right.z - left.z ||
+        (a !== undefined && b !== undefined ? a - b : 0) ||
         left.id - right.id
       );
     });
